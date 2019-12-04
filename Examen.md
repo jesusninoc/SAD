@@ -1,3 +1,4 @@
+```PowerShell
 $passactu = "system"
 
 $pass=Read-Host 'Introducir contraseña para acceder al sistema'
@@ -128,3 +129,4 @@ if($haceping -ne $ping){
 
 
 }
+```
