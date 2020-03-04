@@ -1,0 +1,111 @@
+//Formulario para subir imagen que elijan 
+<form name="MiForm" id="MiForm" method="post" action="cargar.php" enctype="multipart/form-data">
+        <h4 class="text-center">Seleccione imagen a cargar</h4>
+            <br>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">Seleccione una imagen de sus Archivos</label>
+            <br>
+          <div class="col-sm-8">
+            <input type="file" class="form-control" id="image" name="image" multiple>
+          </div>
+            <br>
+          <button name="submit" class="btn btn-primary">Subir Imagen</button>
+        </div>
+</form>
+
+
+//Subir la imagen a la base de datos
+<?php
+if(isset($_POST["submit"])){
+    $revisar = getimagesize($_FILES["image"]["tmp_name"]);
+    if($revisar !== false){
+        $image = $_FILES['image']['tmp_name'];
+        $imgContenido = addslashes(file_get_contents($image));
+        
+        $Host = 'localhost';
+        $Username = 'root';
+        $Password = '';
+        $dbName = 'p006';
+        
+        $db = new mysqli($Host, $Username, $Password, $dbName);
+     
+        if($db->connect_error){
+            die("Connection failed: " . $db->connect_error);
+        }
+                
+       $insertar = $db->query("INSERT into images_tabla (imagenes, creado) VALUES ('$imgContenido', now())");
+       
+        if($insertar){
+            echo "Archivo Subido Correctamente.";
+        }else{
+            echo "Ha fallado la subida, reintente nuevamente.";
+        } 
+       
+    }else{
+        echo "Por favor seleccione imagen a subir.";
+    }
+}
+?>
+<br>
+ <form name="MiForm2" id="MiForm2" method="post" action="ver.php" enctype="multipart/form-data">
+    <button name="submit" class="btn btn-primary">Ver Imagen</button>
+</form>
+
+
+//Mostrar imagen infectada por pantalla
+<body>
+<div class="main">
+<h1>A continuación se mostrará la imagen que ha subido a la Base de Datos</h1>
+  <div class="panel panel-primary">
+    <div class="panel-body">
+<img src='vista.php?id=8' alt='Img blob desde MySQL' width="600" />      
+      </div> 
+    </div>
+ </div>
+</body>
+
+<?php
+if(!empty($_GET['id'])){
+    //Credenciales de conexion
+    $Host = 'localhost';
+    $Username = 'root';
+    $Password = '';
+    $dbName = 'p006';
+    
+    //Crear conexion mysql
+    $db = new mysqli($Host, $Username, $Password, $dbName);
+    
+    //revisar conexion
+    if($db->connect_error){
+       die("Connection failed: " . $db->connect_error);
+    }
+    
+    //Extraer imagen de la BD mediante GET
+    $result = $db->query("SELECT imagenes FROM images_tabla WHERE id = {$_GET['id']}");
+    
+    if($result->num_rows > 0){
+        $imgDatos = $result->fetch_assoc();
+        
+        //Mostrar Imagen
+        header("Content-type: image/jpg"); 
+        echo $imgDatos['imagenes']; 
+    }else{
+        echo 'Imagen no existe...';
+    }
+}
+?>
+
+//Para detectar que usuario ha subido el virus
+//Crear otra tabla
+CREATE TABLE IF NOT EXISTS `images_tabla_2` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `imagenes` longblob NOT NULL,
+  `creado` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+);
+//Creamos un trigger para cuando inserten algo nuevo, se inserte en esta tabla a la vez
+CREATE TRIGGER IMAGES_AI AFTER INSERT ON IMAGES_TABLA FOR EACH ROW
+INSERT INTO IMAGES_TABLA_2(ID, IMAGENES, CREADO)
+VALUES(NEW.ID, NEW.IMAGENES, NEW.CREADO, NOW())
+
+//La primera tabla que he creado tiene la fecha y hora de cuando se ha subido el fichero, de ahi viene el campo `creado`
